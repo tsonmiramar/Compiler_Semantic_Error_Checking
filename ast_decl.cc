@@ -52,7 +52,13 @@ void VarDecl::Check(){
 
 	symbolTable->insert(varsym);
 
-	//TODO: Semantic check for assigned expression
+	if (assignTo != NULL){
+		assignTo->Check();
+
+		if ( this->GetType() != assignTo->type ){
+			ReportError::InvalidInitialization(this->GetIdentifier(), this->GetType(), assignTo->type);
+		}
+	}
 }
 
 FnDecl::FnDecl(Identifier *n, Type *r, List<VarDecl*> *d) : Decl(n) {

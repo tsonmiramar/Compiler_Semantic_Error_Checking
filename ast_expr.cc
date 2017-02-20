@@ -16,6 +16,11 @@ void IntConstant::PrintChildren(int indentLevel) {
     printf("%d", value);
 }
 
+//Semantic check for intconstant
+void IntConstant::Check(){
+	this->type = Type::intType;
+}
+
 FloatConstant::FloatConstant(yyltype loc, double val) : Expr(loc) {
     value = val;
 }
@@ -23,11 +28,25 @@ void FloatConstant::PrintChildren(int indentLevel) {
     printf("%g", value);
 }
 
+//Semantic check for float constant
+void FloatConstant::Check(){
+	this->type = Type::floatType;
+}
+
 BoolConstant::BoolConstant(yyltype loc, bool val) : Expr(loc) {
     value = val;
 }
 void BoolConstant::PrintChildren(int indentLevel) { 
     printf("%s", value ? "true" : "false");
+}
+
+void BoolConstant::Check(){
+	this->type = Type::boolType;
+}
+
+//Semantic check for emptyExpr
+void EmptyExpr::Check(){
+	this->type = Type::voidType;
 }
 
 VarExpr::VarExpr(yyltype loc, Identifier *ident) : Expr(loc) {
