@@ -55,7 +55,7 @@ void VarDecl::Check(){
 	if (assignTo != NULL){
 		assignTo->Check();
 
-		if ( this->GetType() != assignTo->type ){
+		if ( (this->GetType() != assignTo->type ) && ( assignTo->type != Type::errorType ) ){ 
 			ReportError::InvalidInitialization(this->GetIdentifier(), this->GetType(), assignTo->type);
 		}
 	}

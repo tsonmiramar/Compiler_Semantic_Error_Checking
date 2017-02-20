@@ -54,6 +54,25 @@ VarExpr::VarExpr(yyltype loc, Identifier *ident) : Expr(loc) {
     this->id = ident;
 }
 
+//Semantic check for VarExpr
+void VarExpr::Check() {
+	Identifier* id = this->GetIdentifier();
+	Symbol* sym = NULL;
+	for ( int i = symbolTable->GetTables()->size()-1; i >=0; i--){
+		sym = symbolTable->GetTables()->at(i)->find(id->GetName());
+		if ( sym != NULL )
+			break;
+	}
+
+	if ( sym == NULL ){
+		this->type = Type::errorType;
+		ReportError::IdentifierNotDeclared(id, LookingForVariable);
+	}
+	else{
+		VarDecl* vardecl = dynamic_cast<VarDecl*>(sym->decl);
+		this->type = vardecl->GetType();
+	}
+}
 void VarExpr::PrintChildren(int indentLevel) {
     id->Print(indentLevel+1);
 }

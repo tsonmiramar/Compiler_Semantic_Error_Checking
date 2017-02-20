@@ -75,6 +75,7 @@ class SymbolTable {
     void insert(Symbol &sym);
     void remove(Symbol &sym);
     Symbol *find(const char *name);
+    std::vector<ScopedTable*>* GetTables() { return &tables; }
 
 };    
 
