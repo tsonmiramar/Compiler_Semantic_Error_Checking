@@ -58,9 +58,34 @@ void StmtBlock::PrintChildren(int indentLevel) {
     stmts->PrintAll(indentLevel+1);
 }
 
+void StmtBlock::Check(){
+	for ( int i = 0; i < decls->NumElements(); i++ ){
+		decls->Nth(i)->Check();
+	}
+
+	for ( int i = 0; i < stmts->NumElements(); i++ ){
+		Stmt* stmt = stmts->Nth(i);
+		StmtBlock* stmtBlk = dynamic_cast<StmtBlock*>(stmt);
+		if ( stmtBlk != NULL ){
+			symbolTable->push();
+		}
+
+		stmts->Nth(i)->Check();
+
+		if ( stmtBlk != NULL){
+			symbolTable->pop();
+		}
+	}
+}
+
 DeclStmt::DeclStmt(Decl *d) {
     Assert(d != NULL);
     (decl=d)->SetParent(this);
+}
+
+//Semantic Check for DeclStmt
+void DeclStmt::Check(){
+	decl->Check();
 }
 
 void DeclStmt::PrintChildren(int indentLevel) {

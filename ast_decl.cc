@@ -102,7 +102,7 @@ void FnDecl::Check(){
 			formals->Nth(i)->Check();
 		}
 		
-		//TODO: semantic check for body statement block
+		this->GetBody()->Check();
 		
 		symbolTable->pop(); //Pop the current scoped table		
 	}
