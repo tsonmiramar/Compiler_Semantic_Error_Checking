@@ -51,6 +51,8 @@ void VarDecl::Check(){
 	}
 
 	symbolTable->insert(varsym);
+
+	//TODO: Semantic check for assigned expression
 }
 
 FnDecl::FnDecl(Identifier *n, Type *r, List<VarDecl*> *d) : Decl(n) {
@@ -82,5 +84,27 @@ void FnDecl::PrintChildren(int indentLevel) {
 
 //Semantic Check for Function Declaration
 void FnDecl::Check(){
+	//Check if this function is already declared in the current scope
+	Symbol Fnsym(this->GetIdentifier()->GetName(),this,E_FunctionDecl);
+        Symbol* preFnsym = symbolTable->find(Fnsym.name);
+        if ( preFnsym != NULL ){
+                ReportError::DeclConflict(this,preFnsym->decl);
+                symbolTable->remove(*preFnsym);
+        }
+
+        symbolTable->insert(Fnsym);
+	
+	if ( this->GetBody() != NULL ){
+		
+		symbolTable->push(); //push new scoped table	
+		List<VarDecl*>* formals = this->GetFormals();
+		for ( int i = 0; i < formals->NumElements(); i++ ){
+			formals->Nth(i)->Check();
+		}
+		
+		//TODO: semantic check for body statement block
+		
+		symbolTable->pop(); //Pop the current scoped table		
+	}
 }
 
