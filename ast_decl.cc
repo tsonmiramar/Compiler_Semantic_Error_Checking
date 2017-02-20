@@ -42,8 +42,17 @@ void VarDecl::PrintChildren(int indentLevel) {
 
 //Semantic check for VarDecl
 void VarDecl::Check(){
+	//Check if this Variable is declared before in the scope table
+	Symbol varsym(this->GetIdentifier()->GetName(),this,E_VarDecl);
+	Symbol* preVarsym = symbolTable->find(varsym.name);
+	if ( preVarsym != NULL ){
+		ReportError::DeclConflict(this,preVarsym->decl);
+		symbolTable->remove(*preVarsym);
+	}
 
+	symbolTable->insert(varsym);
 }
+
 FnDecl::FnDecl(Identifier *n, Type *r, List<VarDecl*> *d) : Decl(n) {
     Assert(n != NULL && r!= NULL && d != NULL);
     (returnType=r)->SetParent(this);
@@ -69,5 +78,9 @@ void FnDecl::PrintChildren(int indentLevel) {
     if (id) id->Print(indentLevel+1);
     if (formals) formals->PrintAll(indentLevel+1, "(formals) ");
     if (body) body->Print(indentLevel+1, "(body) ");
+}
+
+//Semantic Check for Function Declaration
+void FnDecl::Check(){
 }
 

@@ -26,7 +26,7 @@ Symbol* ScopedTable::find(const char *name){
 
 /* SymbolTable */
 SymbolTable::SymbolTable() {}
-SymbolTalbe::~SymbolTable() {}
+SymbolTable::~SymbolTable() {}
 void SymbolTable::pop(){
 	tables.pop_back();
 }
