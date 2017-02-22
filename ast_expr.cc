@@ -73,8 +73,82 @@ void VarExpr::Check() {
 		this->type = vardecl->GetType();
 	}
 }
+
 void VarExpr::PrintChildren(int indentLevel) {
     id->Print(indentLevel+1);
+}
+
+//Semantic check for relational expr
+void RelationalExpr::Check(){
+	this->type = Type::boolType;
+	left->Check();
+
+	if ( left->type == Type::errorType )
+                right->type = Type::errorType;
+        else
+                right->Check();
+	
+	if ( left->type != Type::errorType && right->type != Type::errorType ){
+		if ( left->type != right->type ){
+			ReportError::IncompatibleOperands(op, left->type, right->type);
+			this->type = Type::errorType;
+		}	
+	}
+	else {
+		this->type = Type::errorType;
+	}
+	
+}
+
+//Semantic Check for Arithmetic expr
+void ArithmeticExpr::Check(){
+	if (left != NULL){
+        	left->Check();
+
+		if ( left->type == Type::errorType )
+                	right->type = Type::errorType;
+        	else
+                	right->Check();
+
+	        if ( left->type != Type::errorType && right->type != Type::errorType ){
+        	        if ( left->type != right->type ){
+                	        ReportError::IncompatibleOperands(op, left->type, right->type);
+				this->type = Type::errorType;
+                	}
+			else{
+				char* opTok = op->GetOpTokStr();
+				if ( strcmp(opTok,(char*)"==") == 0 || 
+				     strcmp(opTok,(char*)"!=") == 0 || 
+				     strcmp(opTok, (char*)"&&") == 0 || 
+				     strcmp(opTok,(char*)"||") == 0 )
+					this->type = Type::boolType;
+				else
+					this->type = left->type;
+			}
+        	}
+		else {
+			this->type = Type::errorType;	
+		}
+	}
+
+	else { //Unary Expr
+		right->Check();
+		if ( right->type == Type::errorType )
+			this->type = Type::errorType;
+		else
+			this->type = right->type;
+	}
+}
+
+//Semantic Check for postfix expr
+void PostfixExpr::Check(){
+	left->Check();
+	if ( left->type == Type::intType || left->type == Type::floatType )
+		this->type = left->type;
+	else{
+		ReportError::IncompatibleOperand(op, left->type);
+		this->type = Type::errorType;
+	}
 }
 
 Operator::Operator(yyltype loc, const char *tok) : Node(loc) {
