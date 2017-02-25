@@ -112,7 +112,7 @@ void ArithmeticExpr::Check(){
 
 	        if ( left->type != Type::errorType && right->type != Type::errorType ){
         	        if ( left->type != right->type ){
-                	        ReportError::IncompatibleOperands(op, left->type, right->type);
+				ReportError::IncompatibleOperands(op, left->type, right->type);
 				this->type = Type::errorType;
                 	}
 			else{
@@ -133,21 +133,45 @@ void ArithmeticExpr::Check(){
 
 	else { //Unary Expr
 		right->Check();
-		if ( right->type == Type::errorType )
+		if ( right->type == Type::boolType ){
+			ReportError::IncompatibleOperand(op, right->type);
 			this->type = Type::errorType;
-		else
+		}
+		else {
 			this->type = right->type;
+		}
 	}
 }
 
 //Semantic Check for postfix expr
 void PostfixExpr::Check(){
 	left->Check();
-	if ( left->type == Type::intType || left->type == Type::floatType )
-		this->type = left->type;
-	else{
+	if ( left->type == Type::boolType ){
 		ReportError::IncompatibleOperand(op, left->type);
 		this->type = Type::errorType;
+	}
+	else {
+		this->type = left->type; 
+	}
+}
+
+//Semantic Check for AssignExpr
+void AssignExpr::Check(){
+	left->Check();
+	if ( left->type == Type::errorType )
+		this->type = right->type = Type::errorType;
+	else{
+		right->Check();
+		if ( right->type == Type::errorType )
+			this->type = left->type = Type::errorType;
+		else{
+			if ( left->type != right->type ){
+				ReportError::IncompatibleOperands(op,left->type,right->type);
+				this->type = Type::errorType;			
+			}
+			else
+				this->type = left->type;
+		}
 	}
 }
 
@@ -215,6 +239,33 @@ void ArrayAccess::PrintChildren(int indentLevel) {
     base->Print(indentLevel+1);
     subscript->Print(indentLevel+1, "(subscript) ");
 }
+
+//Semantic Check for Array Access
+void ArrayAccess::Check(){
+	base->Check();
+	VarExpr* varExpr = dynamic_cast<VarExpr*>(base);
+	if ( varExpr == NULL ){
+		// this must be variable expr. FloatConstant,IntConstant,BoolConstant is unacceptable;
+		this->type = Type::errorType;
+	}
+	else {
+		ArrayType* arrType = dynamic_cast<ArrayType*>(base->type);
+		if ( arrType == NULL ){
+			ReportError::NotAnArray(varExpr->GetIdentifier());
+			this->type = Type::errorType;
+		}
+		else if ( base->type == Type::errorType )
+			this->type = Type::errorType;
+		else{
+			subscript->Check();
+			if ( subscript->type != Type::errorType )
+				this->type = arrType->GetElemType();
+			else
+				this->type = Type::errorType;
+		}
+	}
+}
+
      
 FieldAccess::FieldAccess(Expr *b, Identifier *f) 
   : LValue(b? Join(b->GetLocation(), f->GetLocation()) : *f->GetLocation()) {
@@ -228,6 +279,62 @@ FieldAccess::FieldAccess(Expr *b, Identifier *f)
 void FieldAccess::PrintChildren(int indentLevel) {
     if (base) base->Print(indentLevel+1);
     field->Print(indentLevel+1);
+}
+
+//Semantic Check for FieldAccess expr:
+void FieldAccess::Check(){
+	if ( base != NULL )
+		base->Check();
+	
+	if ( base->type != Type::vec2Type && base->type !=Type::vec3Type && base->type != Type::vec4Type ){
+		ReportError::InaccessibleSwizzle(field, base);
+		this->type = Type::errorType;
+		return;
+	}
+
+	string swiz = string(field->GetName());
+	for ( int i = 0; i < swiz.size(); i++ ){
+		if ( swiz[i] != 'x' && swiz[i] != 'y' && swiz[i] != 'z' && swiz[i]!= 'w' ){
+			ReportError::InvalidSwizzle(field, base);
+			this->type = Type::errorType;
+			return;
+		}
+	}
+	
+	if ( base->type == Type::vec2Type ){
+		for ( int i = 0; i < swiz.size(); i++ ){
+                	if ( swiz[i] == 'z' ||  swiz[i] == 'w' ){
+				ReportError::SwizzleOutOfBound(field, base);
+                        	this->type = Type::errorType;
+                        	return;
+			}
+                }
+        }
+	
+	else if ( base->type == Type::vec3Type) {
+	 	for ( int i = 0; i < swiz.size(); i++ ){
+                	if ( swiz[i] == 'w' ){
+                        	ReportError::SwizzleOutOfBound(field, base);
+                        	this->type = Type::errorType;
+                        	return;
+                	}
+		}
+
+	}
+	
+	if (swiz.size() > 4) {
+		ReportError::OversizedVector(field, base);
+		this->type = Type::errorType;
+		return;
+	}
+	
+
+	switch ( swiz.size() ){
+		case 4: this->type = Type::vec4Type; break;
+		case 3: this->type = Type::vec3Type; break;
+		case 2: this->type = Type::vec2Type; break;
+		default: this->type = Type::floatType; break;
+	}
 }
 
 Call::Call(yyltype loc, Expr *b, Identifier *f, List<Expr*> *a) : Expr(loc)  {
@@ -244,3 +351,61 @@ void Call::PrintChildren(int indentLevel) {
    if (actuals) actuals->PrintAll(indentLevel+1, "(actuals) ");
 }
 
+//Semantic Check for Call expr
+void Call::Check(){
+	if ( base != NULL ){
+		base->Check();
+	}
+	Decl* decl = NULL;
+	// Check for function declaration in global scope
+	for ( int i = symbolTable->GetTables()->size() - 1; i >= 0; i-- ){
+		Symbol* fnSym = symbolTable->GetTables()->at(i)->find(field->GetName());
+		if ( fnSym != NULL ){
+			decl = fnSym->decl;
+			break;
+		}
+	}
+	
+		
+	if(decl == NULL) {
+		ReportError::IdentifierNotDeclared(field, LookingForFunction);
+		this->type = Type::errorType;	
+	}
+	else{
+		FnDecl* fndecl = dynamic_cast<FnDecl*>(decl);	
+		if ( fndecl == NULL ){
+			ReportError::ReportError::NotAFunction(field);
+			this->type = Type::errorType;
+		}
+		else{
+			if(fndecl->GetFormals()->NumElements() > actuals->NumElements()) {
+				ReportError::LessFormals(field, fndecl->GetFormals()->NumElements(), actuals->NumElements());
+				this->type = Type::errorType;
+			}
+			else if(fndecl->GetFormals()->NumElements() < actuals->NumElements()) {
+				ReportError::ExtraFormals(field, fndecl->GetFormals()->NumElements(), actuals->NumElements());
+				this->type = Type::errorType;
+			}
+			else{
+				this->type = fndecl->GetType();
+
+				for(int i = 0; i < actuals->NumElements(); i++) {
+					Expr* actual = actuals->Nth(i);
+					actual->Check();
+					
+					if ( actual->type != Type::errorType ){
+						Type* giventype = fndecl->GetFormals()->Nth(i)->GetType();
+						if ( actual->type != giventype ){
+							ReportError::FormalsTypeMismatch(field, i+1, giventype, actual->type);
+							this->type = Type::errorType;
+							break;
+						}
+					}
+					else{
+						this->type = Type::errorType;
+					}
+				}
+			}		
+		}
+	}
+}

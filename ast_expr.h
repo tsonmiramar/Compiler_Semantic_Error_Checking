@@ -166,7 +166,7 @@ class AssignExpr : public CompoundExpr
   public:
     AssignExpr(Expr *lhs, Operator *op, Expr *rhs) : CompoundExpr(lhs,op,rhs) {}
     const char *GetPrintNameForNode() { return "AssignExpr"; }
-    void Check() {};
+    void Check();
 };
 
 class PostfixExpr : public CompoundExpr
@@ -185,7 +185,7 @@ class ConditionalExpr : public Expr
     ConditionalExpr(Expr *c, Expr *t, Expr *f);
     void PrintChildren(int indentLevel);
     const char *GetPrintNameForNode() { return "ConditionalExpr"; }
-    void Check() {};
+    void Check() { /*does not report error in this case*/ };
 };
 
 class LValue : public Expr 
@@ -203,6 +203,7 @@ class ArrayAccess : public LValue
     ArrayAccess(yyltype loc, Expr *base, Expr *subscript);
     const char *GetPrintNameForNode() { return "ArrayAccess"; }
     void PrintChildren(int indentLevel);
+    void Check();
 };
 
 /* Note that field access is used both for qualified names
@@ -220,6 +221,7 @@ class FieldAccess : public LValue
     FieldAccess(Expr *base, Identifier *field); //ok to pass NULL base
     const char *GetPrintNameForNode() { return "FieldAccess"; }
     void PrintChildren(int indentLevel);
+    void Check();
 };
 
 /* Like field access, call is used both for qualified base.field()
@@ -238,6 +240,7 @@ class Call : public Expr
     Call(yyltype loc, Expr *base, Identifier *field, List<Expr*> *args);
     const char *GetPrintNameForNode() { return "Call"; }
     void PrintChildren(int indentLevel);
+    void Check();
 };
 
 class ActualsError : public Call

@@ -1,6 +1,0 @@
-
-*** Error line 12.
-     y = v.xz;
-           ^^
-*** VarExpr swizzle 'xz' exceeds its vector component
-

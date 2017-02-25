@@ -1,6 +1,0 @@
-
-*** Error line 3.
-	while (100) {
-               ^^^
-*** Test expression must have boolean type
-

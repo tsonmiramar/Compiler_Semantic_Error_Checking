@@ -70,7 +70,7 @@ void StmtBlock::Check(){
 			symbolTable->push();
 		}
 
-		stmts->Nth(i)->Check();
+		stmt->Check();
 
 		if ( stmtBlk != NULL){
 			symbolTable->pop();
@@ -131,7 +131,24 @@ void IfStmt::PrintChildren(int indentLevel) {
     if (elseBody) elseBody->Print(indentLevel+1, "(else) ");
 }
 
+//Semantic Check for IfStmt
+void IfStmt::Check(){
+	test->Check();
+	if ( test->type != Type::boolType ){
+		ReportError::TestNotBoolean(test);
+		test->type = Type::errorType;
+	}
 
+	symbolTable->push(); //Push new scope for If body expr
+	body->Check();
+	symbolTable->pop(); //Pop If body expr scope
+
+	if (elseBody != NULL ){
+		symbolTable->push();
+		elseBody->Check();
+		symbolTable->pop();
+	}
+}
 ReturnStmt::ReturnStmt(yyltype loc, Expr *e) : Stmt(loc) { 
     expr = e;
     if (e != NULL) expr->SetParent(this);
@@ -173,3 +190,40 @@ void SwitchStmt::PrintChildren(int indentLevel) {
     if (def) def->Print(indentLevel+1);
 }
 
+//Semactic check for switch stmt
+void SwitchStmt::Check(){
+	symbolTable->push(); //Push scope 
+	expr->Check();
+	for ( int i = 0; i < cases->NumElements(); i++ ){
+		AssignExpr* assignExpr = dynamic_cast<AssignExpr*>(cases->Nth(i));
+		if ( assignExpr != NULL )
+			continue; //Skip semantic checking of assignexpr inside switch statement
+		cases->Nth(i)->Check();
+	}
+	symbolTable->pop(); //Pop scope
+}
+
+//Semantic Check for Case stmt
+void Case::Check(){
+	label->Check();
+	StmtBlock* stmtBlock = dynamic_cast<StmtBlock*>(stmt);
+	if ( stmtBlock != NULL)	
+		symbolTable->push();
+
+	stmt->Check();
+
+	if (stmtBlock != NULL )
+		symbolTable->pop();
+}
+
+//Semantic Check for Default Stmt
+void Default::Check(){
+	StmtBlock* stmtBlock = dynamic_cast<StmtBlock*>(stmt);
+	if ( stmtBlock != NULL )
+		symbolTable->push();
+	
+	stmt->Check();
+
+	if ( stmtBlock != NULL )
+		symbolTable->pop();
+}

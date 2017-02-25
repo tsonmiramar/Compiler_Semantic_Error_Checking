@@ -1,6 +1,0 @@
-
-*** Error line 8.
-  return foo(1);
-         ^^^
-*** Extra arguments given to function 'foo': expected 0, given 1
-
