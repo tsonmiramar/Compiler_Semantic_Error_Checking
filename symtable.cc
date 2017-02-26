@@ -49,3 +49,22 @@ Symbol* SymbolTable::find(const char *name){
 	return tables.back()->find(name);
 }
 
+/* My Stack */
+bool MyStack::insideLoop(){
+	if ( stmtStack.size() <= 0 )
+		return false;
+
+	ForStmt* forStmt = dynamic_cast<ForStmt*>(stmtStack.back());
+	WhileStmt* whileStmt = dynamic_cast<WhileStmt*>(stmtStack.back());
+
+	return ( forStmt != NULL || whileStmt != NULL );
+}
+
+bool MyStack::insideSwitch(){
+	if ( stmtStack.size() <= 0 )
+		return false;
+
+	SwitchStmt* switchStmt = dynamic_cast<SwitchStmt*>(stmtStack.back());
+
+	return ( switchStmt != NULL );
+}

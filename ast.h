@@ -58,6 +58,7 @@ class Node  {
     virtual ~Node() {}
     
     static SymbolTable* symbolTable;
+    static MyStack* loop_switchStack;
     yyltype *GetLocation()   { return location; }
     void SetParent(Node *p)  { parent = p; }
     Node *GetParent()        { return parent; }

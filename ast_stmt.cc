@@ -114,9 +114,48 @@ void ForStmt::PrintChildren(int indentLevel) {
     body->Print(indentLevel+1, "(body) ");
 }
 
+//Semantic Check for For Stmt
+void ForStmt::Check(){
+	symbolTable->push();
+	loop_switchStack->push(this);
+	
+	init->Check();
+	test->Check();
+
+	if(!(test->type == Type::boolType)) {
+		ReportError::TestNotBoolean(test);
+		test->type = Type::errorType;
+	}
+
+	if(step != NULL) {
+		step->Check();
+	}
+
+	body->Check();
+
+	loop_switchStack->pop();
+	symbolTable->pop();
+}
+
 void WhileStmt::PrintChildren(int indentLevel) {
     test->Print(indentLevel+1, "(test) ");
     body->Print(indentLevel+1, "(body) ");
+}
+
+//Semantic Check for While Stmt
+void WhileStmt::Check(){
+	symbolTable->push();
+	loop_switchStack->push(this);
+	test->Check();
+	
+	if ( !(test->type == Type::boolType) ){
+		ReportError::TestNotBoolean(test);
+		test->type = Type::errorType;
+	}
+
+	body->Check();
+	loop_switchStack->pop();
+	symbolTable->pop();
 }
 
 IfStmt::IfStmt(Expr *t, Stmt *tb, Stmt *eb): ConditionalStmt(t, tb) { 
@@ -192,7 +231,8 @@ void SwitchStmt::PrintChildren(int indentLevel) {
 
 //Semactic check for switch stmt
 void SwitchStmt::Check(){
-	symbolTable->push(); //Push scope 
+	symbolTable->push(); //Push scope
+	loop_switchStack->push(this); 
 	expr->Check();
 	for ( int i = 0; i < cases->NumElements(); i++ ){
 		AssignExpr* assignExpr = dynamic_cast<AssignExpr*>(cases->Nth(i));
@@ -200,6 +240,7 @@ void SwitchStmt::Check(){
 			continue; //Skip semantic checking of assignexpr inside switch statement
 		cases->Nth(i)->Check();
 	}
+	loop_switchStack->pop();
 	symbolTable->pop(); //Pop scope
 }
 
@@ -226,4 +267,19 @@ void Default::Check(){
 
 	if ( stmtBlock != NULL )
 		symbolTable->pop();
+}
+
+//Semantic Check for Break Stmt
+void BreakStmt::Check(){
+	if ( !(loop_switchStack->insideLoop()) && !(loop_switchStack->insideSwitch())){
+		ReportError::BreakOutsideLoop(this);
+	}
+}
+
+// Semantic Check for Continue Stmt
+
+void ContinueStmt::Check(){
+	if ( !loop_switchStack->insideLoop() ){
+		ReportError::ContinueOutsideLoop(this);
+	}
 }
