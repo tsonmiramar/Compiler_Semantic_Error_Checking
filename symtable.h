@@ -64,6 +64,7 @@ class ScopedTable {
    
 class SymbolTable {
   std::vector<ScopedTable *> tables;
+  FnDecl* currFn;
  
   public:
     SymbolTable();
@@ -75,6 +76,9 @@ class SymbolTable {
     void insert(Symbol &sym);
     void remove(Symbol &sym);
     Symbol *find(const char *name);
+    FnDecl *getCurrentFn();
+    bool returnFound;
+    void setCurrentFn(FnDecl* fnDecl);
     std::vector<ScopedTable*>* GetTables() { return &tables; }
 
 };    

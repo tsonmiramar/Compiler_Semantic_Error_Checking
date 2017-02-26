@@ -36,11 +36,14 @@ void Program::Check() {
     if ( decls->NumElements() > 0 ) {
       for ( int i = 0; i < decls->NumElements(); ++i ) {
         Decl *d = decls->Nth(i);
+	
+	FnDecl *fnDecl = dynamic_cast<FnDecl*>(d);
+
+	if ( fnDecl != NULL ){
+		symbolTable->setCurrentFn(fnDecl);
+	}
+	
         d->Check();
-	/*
-         * Basically you have to make sure that each declaration is 
-         * semantically correct.
-         */
       }
     }
 
@@ -66,6 +69,11 @@ void StmtBlock::Check(){
 	for ( int i = 0; i < stmts->NumElements(); i++ ){
 		Stmt* stmt = stmts->Nth(i);
 		StmtBlock* stmtBlk = dynamic_cast<StmtBlock*>(stmt);
+	 	ReturnStmt* returnStmt = dynamic_cast<ReturnStmt*>(stmt);
+		if ( returnStmt != NULL ){
+			symbolTable->returnFound = true;
+		}
+
 		if ( stmtBlk != NULL ){
 			symbolTable->push();
 		}
@@ -196,6 +204,23 @@ ReturnStmt::ReturnStmt(yyltype loc, Expr *e) : Stmt(loc) {
 void ReturnStmt::PrintChildren(int indentLevel) {
     if ( expr ) 
       expr->Print(indentLevel+1);
+}
+
+//Semantic check for Return Stmt
+void ReturnStmt::Check(){
+	FnDecl* currFn = symbolTable->getCurrentFn();
+	if ( expr != NULL ){
+		expr->Check();
+		if ( expr->type != Type::errorType ){
+			if ( currFn->GetType() != expr->type ){
+				ReportError::ReturnMismatch(this, expr->type, currFn->GetType());
+			}
+		}
+	} else {
+		if ( currFn->GetType() != Type::voidType ){
+			ReportError::ReturnMismatch(this, expr->type, currFn->GetType());
+		}
+	}
 }
 
 SwitchLabel::SwitchLabel(Expr *l, Stmt *s) {

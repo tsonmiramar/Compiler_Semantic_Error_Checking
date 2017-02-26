@@ -154,6 +154,7 @@ class ReturnStmt : public Stmt
     ReturnStmt(yyltype loc, Expr *expr = NULL);
     const char *GetPrintNameForNode() { return "ReturnStmt"; }
     void PrintChildren(int indentLevel);
+    void Check();
 };
 
 class SwitchLabel : public Stmt

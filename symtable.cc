@@ -49,6 +49,14 @@ Symbol* SymbolTable::find(const char *name){
 	return tables.back()->find(name);
 }
 
+FnDecl* SymbolTable::getCurrentFn(){
+	return currFn;
+};
+
+void SymbolTable::setCurrentFn(FnDecl* fnDecl){
+	currFn = fnDecl; 
+}
+
 /* My Stack */
 bool MyStack::insideLoop(){
 	if ( stmtStack.size() <= 0 )

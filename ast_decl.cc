@@ -101,15 +101,20 @@ void FnDecl::Check(){
         symbolTable->insert(Fnsym);
 	
 	if ( this->GetBody() != NULL ){
-		
+		symbolTable->returnFound = false;
 		symbolTable->push(); //push new scoped table	
 		List<VarDecl*>* formals = this->GetFormals();
 		for ( int i = 0; i < formals->NumElements(); i++ ){
 			formals->Nth(i)->Check();
 		}
-		
-		this->GetBody()->Check();
-		
+		Stmt* fnBody = this->GetBody();
+		StmtBlock* stmtBlock = dynamic_cast<StmtBlock*>(fnBody);
+		fnBody->Check();
+
+		if ( this->GetType() != Type::voidType && !symbolTable->returnFound ){
+			ReportError::ReturnMissing(this);
+		}	
+
 		symbolTable->pop(); //Pop the current scoped table		
 	}
 }
